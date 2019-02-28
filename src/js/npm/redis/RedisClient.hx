@@ -65,6 +65,12 @@ typedef SimpleStringReply = String;
   var Error : RedisEvent<js.Error->Void> = "error";
 
   /**
+    client will emit warning when password was set but none is needed and if a deprecated
+    option / function / similar is used..
+   **/
+  var Warning : RedisEvent<js.Error->Void> = "warning";
+
+  /**
     client will emit end when an established Redis server connection has closed.
    **/
   var End : RedisEvent<Void->Void> = "end";
@@ -127,6 +133,9 @@ typedef SimpleStringReply = String;
 }
 
 extern class RedisClientBase<TSelf:RedisClientBase<TSelf,TReturn>, TReturn> extends EventEmitter<TSelf> {
+
+  var connection_options :Dynamic;
+
   /**
     When connecting to a Redis server that requires authentication, the AUTH command must be sent as the first command
     after connecting. This can be tricky to coordinate with reconnections, the ready check, etc. To make this easier,
@@ -137,6 +146,20 @@ extern class RedisClientBase<TSelf:RedisClientBase<TSelf,TReturn>, TReturn> exte
    **/
   @:overload(function(password:RedisString):TReturn {})
   function auth(password:RedisString, callback:VoidCallback):TReturn;
+
+  /**
+   * Duplicate all current options and return a new redisClient instance.
+   * All options passed to the duplicate function are going to replace the
+   * original option. If you pass a callback, duplicate is going to wait
+   * until the client is ready and returns it in the callback. If an error
+   * occurs in the meanwhile, that is going to return an error instead in
+   * the callback.
+   * @return RedisClient
+   */
+  @:overload(function():RedisClient {})
+  @:overload(function(callback:Null<js.Error>->RedisClient->Void):RedisClient {})
+  @:overload(function(opts:js.npm.Redis.RedisOptions):RedisClient {})
+  function duplicate(opts:js.npm.Redis.RedisOptions, callback:Null<js.Error>->RedisClient->Void):RedisClient;
 
   /**
     Forcibly close the connection to the Redis server. Note that this does not wait until all replies have been parsed.
@@ -213,14 +236,19 @@ extern class RedisClientBase<TSelf:RedisClientBase<TSelf,TReturn>, TReturn> exte
   /**
     Subscribes to a pattern
    **/
-  function psubscribe(channel:RedisString):TReturn;
+  function psubscribe(pattern:RedisString):TReturn;
 
   /**
-    Unsubscribe to a pattern
+    Unsubscribe to a channel
    **/
   @:overload(function(channels:Rest<RedisString>):Void {})
   @:overload(function(channels:Array<RedisString>):Void {})
   function unsubscribe():Void;
+
+  /**
+    Unsubscribe to a pattern
+   **/
+  function punsubscribe(pattern:RedisString):Void;
 
   @:overload(function(channel:RedisString, message:RedisString, callback:Callback<Int>):TReturn {})
   function publish(channel:RedisString, message:RedisString):TReturn;
@@ -478,6 +506,12 @@ extern class RedisClientBase<TSelf:RedisClientBase<TSelf,TReturn>, TReturn> exte
   function incrby(name:Key, amount:Int):TReturn;
 
   /**
+    Returns info about the instance
+   **/
+  @:overload(function (callback:Null<js.Error>->String->Void):TReturn {})
+  function info():TReturn;
+
+  /**
     Returns a list of keys matching pattern
    **/
   @:overload(function (pattern:RedisString, callback:Callback<Array<RedisString>>):TReturn {})
@@ -724,8 +758,9 @@ extern class RedisClientBase<TSelf:RedisClientBase<TSelf,TReturn>, TReturn> exte
   /**
     Set the value of key name to value that expires in time seconds
    **/
-  @:overload(function (name:Key, time:Int, value:RedisString, callback:Callback<Int>):TReturn {})
-  function setex(name:Key, time:Int, value:RedisString):TReturn;
+  @:overload(function (name:RedisString, time:Int, value:RedisString, callback:Null<js.Error>->RedisString->Void):TReturn {})
+  function setex(name:RedisString, time:Int, value:RedisString):TReturn;
+
 
   /**
     Set the value of key name to value if key doesn’t exist
