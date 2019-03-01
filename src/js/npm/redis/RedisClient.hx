@@ -188,24 +188,6 @@ extern class RedisClientBase<TSelf:RedisClientBase<TSelf,TReturn>, TReturn> exte
   function unref():Void;
 
   /**
-    Duplicate all current options and return a new redisClient instance. All
-    options passed to the duplicate function are going to replace the
-    original option. If you pass a callback, duplicate is going to wait until
-    the client is ready and returns it in the callback. If an error occurs in
-    the meanwhile, that is going to return an error instead in the callback.
-
-    One example of when to use duplicate() would be to accommodate the
-    connection- blocking redis commands BRPOP, BLPOP, and BRPOPLPUSH. If
-    these commands are used on the same redisClient instance as non-blocking
-    commands, the non-blocking ones may be queued up until after the blocking
-    ones finish.
-  **/
-  @:overload(function(callback:js.Error->RedisClient->Void):RedisClient {})
-  @:overload(function(options:js.npm.Redis.RedisOptions, callback:js.Error->RedisClient->Void):RedisClient {})
-  @:overload(function(options:js.npm.Redis.RedisOptions):RedisClient {})
-  function duplicate():RedisClient;
-
-  /**
     The reply from an HGETALL command will be converted into a JavaScript Object by node_redis. That way you can
     interact with the responses using JavaScript syntax.
    **/
